@@ -7,6 +7,7 @@ Created on Thu Feb 10 18:24:36 2022
 import requests
 from time import sleep
 import json
+import time
 
 API_KEY = {'X-API-key': '2VX1D73B'}
 fee = 0.02
@@ -14,7 +15,7 @@ ARB_ENTER_THRESHOLD = 0.2
 ARB_EXIT_THRESHOLD = 0.1
 # 0: no position, 1: buy ETF sell stock, -1: sell ETF buy stock
 ARBITRAGE_STATUS = 0
-arbQuantity = 5000
+arbQuantity = 1
 
 class ApiException(Exception):
     pass
@@ -42,20 +43,21 @@ def ticker_bid_ask(session, ticker):
 def make_order(ticker, orderType, quantity, action):
     with requests.Session() as s:
         s.headers.update(API_KEY)
-        mkt_buy_params = {'ticker': ticker, 'type': orderType, 'quantity': quantity,
+        mkt_params = {'ticker': ticker, 'type': orderType, 'quantity': quantity,
                    'action': action}
-        resp = s.post('http://localhost:9999/v1/orders', params=mkt_buy_params)
+        resp = s.post('http://localhost:9999/v1/orders', params=mkt_params)
+       
+        while not resp.ok:
+            time.sleep(0.5)
+            print("Try submitting again!")
+            resp = s.post('http://localhost:9999/v1/orders', params=mkt_params)
+            
         if resp.ok:
             mkt_order = resp.json()
             print('time:', mkt_order['tick'], 'ticker:', mkt_order['ticker'], 'action:', mkt_order['action'], 'was successfully submited!')
-        else:
-            payload = {'ticker': ticker}
-            resp = s.get('http://localhost:9999/v1/securities/book', params=payload)
-            book = resp.json()
-            print("bids quantity:", book['bids'][0]['quantity'])
-            print("asks quantity:", book['asks'][0]['quantity'])
-            print("The order was not successfully submitted!")
-          
+ 
+            
+            
             
 # check if arbitrage opportunity exists
 # action: "enter" or "exit"
@@ -79,12 +81,18 @@ def check_arbitrage(s, action):
         else: 
             return 0, 0
     elif action == "exit":
-        if ETF_overvalue < ARB_EXIT_THRESHOLD:
-            print("exit1")
-            return -1, 1 # sell ETF, buy stocks
-        elif stock_overvalue < ARB_EXIT_THRESHOLD:
-            print("exit2")
-            return 1, -1 # Buy ETF sell stocks
+        if ARBITRAGE_STATUS == -1:
+            if ETF_overvalue < ARB_EXIT_THRESHOLD:
+                print("exit1", stock_overvalue, ARB_EXIT_THRESHOLD)
+                return -1, 1 # sell ETF, buy stocks
+            else:
+                return 0, 0
+        elif ARBITRAGE_STATUS == 1:
+            if stock_overvalue < ARB_EXIT_THRESHOLD:
+                print("exit2", stock_overvalue, ARB_EXIT_THRESHOLD)
+                return 1, -1 # Buy ETF sell stocks
+            else:
+                return 0, 0
         else: 
             return 0, 0
     else:
