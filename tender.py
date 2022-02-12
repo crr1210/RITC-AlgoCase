@@ -132,7 +132,7 @@ def reverse_tender(session):
     # bought cheap tender, now sell them out
     if TENDER_STATUS == 1:
         trade_per_time = TENDER_POSITION / TENDER_CLEAR_ROUND
-        if TENDER_POSITION % TENDER_CLEAR_ROUND > 0:
+        if TENDER_POSITION % TENDER_CLEAR_ROUND != 0:
             TENDER_CLEAR_ROUND += 1
             
         # clear all tender positionz   
@@ -149,7 +149,7 @@ def reverse_tender(session):
     # sold expensive tender, now buy them back    
     elif TENDER_STATUS == -1:
         trade_per_time = abs(TENDER_POSITION) / TENDER_CLEAR_ROUND
-        if abs(TENDER_POSITION) % TENDER_CLEAR_ROUND > 0:
+        if abs(TENDER_POSITION) % TENDER_CLEAR_ROUND != 0:
             TENDER_CLEAR_ROUND += 1
              
         while TENDER_POSITION < 0:
