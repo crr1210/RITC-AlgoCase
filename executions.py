@@ -31,6 +31,15 @@ def ticker_bid_ask(session, ticker):
 
 
 def make_order(ticker, orderType, quantity, action):
+    order_status = order(ticker, orderType, quantity, action)
+    
+    while not order_status:
+        time.sleep(1)
+        print("Try submitting again!")
+        order_status = order(ticker, orderType, quantity, action)
+    
+    
+def order(ticker, orderType, quantity, action):
     with requests.Session() as s:
         s.headers.update(config.API_KEY)
         RITCbid, RITCask = ticker_bid_ask(s, 'RITC')
@@ -38,35 +47,33 @@ def make_order(ticker, orderType, quantity, action):
         Bearbid, Bearask = ticker_bid_ask(s, 'BEAR') 
         mkt_params = {'ticker': ticker, 'type': orderType, 'quantity': quantity, 
                       'action': action}
-        price = 0
-        if orderType == 'LIMIT':
-            if ticker == 'RITC':
-                if action == 'BUY':
-                    price = RITCbid + 0.01
-                else:
-                    price = RITCask - 0.01
-            elif ticker == 'BULL':
-                if action == 'BUY':
-                    price = Bullbid + 0.01
-                else:
-                    price = Bullask - 0.01
-            else:
-                if action == 'BUY':
-                    price = Bearbid + 0.01
-                else:
-                    price = Bearask - 0.01
+        # price = 0
+        # if orderType == 'LIMIT':
+        #     if ticker == 'RITC':
+        #         if action == 'BUY':
+        #             price = RITCbid + 0.01
+        #         else:
+        #             price = RITCask - 0.01
+        #     elif ticker == 'BULL':
+        #         if action == 'BUY':
+        #             price = Bullbid + 0.01
+        #         else:
+        #             price = Bullask - 0.01
+        #     else:
+        #         if action == 'BUY':
+        #             price = Bearbid + 0.01
+        #         else:
+        #             price = Bearask - 0.01
                     
-            mkt_params['price'] = price
+        #     mkt_params['price'] = price
             
         resp = s.post('http://localhost:9999/v1/orders', params=mkt_params)
-       
-        while not resp.ok:
-            print("Try submitting again!")
-            time.sleep(1)
-            resp = s.post('http://localhost:9999/v1/orders', params=mkt_params)
-            
-            
+        print(mkt_params)
+        
         if resp.ok:
             mkt_order = resp.json()
             print('time:', mkt_order['tick'], 'ticker:', mkt_order['ticker'], 
                   'action:', mkt_order['action'], 'was successfully submited!')
+            return True
+        else:
+            return False

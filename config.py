@@ -16,5 +16,5 @@ TENDER_ID = "NA"
 ARB_ENTER_THRESHOLD = 0.2
 ARB_EXIT_THRESHOLD = 0.1
 # 0: no position, 1: buy ETF sell stock, -1: sell ETF buy stock
-arbQuantity = 1
+arbQuantity = 500
 arbClearRound = 15
