@@ -29,7 +29,13 @@ def ticker_bid_ask(session, ticker):
         return (book['bids'][0]['price'], book['asks'][0]['price'])
     raise ApiException('Authorization error. Please check API key.')
 
-
+def get_position(session, ticker):
+    payload = {'ticker': ticker}
+    resp = session.get('http://localhost:9999/v1/securities', params=payload)
+    info = resp.json()
+    return info[0]['position']
+    
+    
 def make_order(ticker, orderType, quantity, action):
     order_status = order(ticker, orderType, quantity, action)
     
@@ -47,25 +53,6 @@ def order(ticker, orderType, quantity, action):
         Bearbid, Bearask = ticker_bid_ask(s, 'BEAR') 
         mkt_params = {'ticker': ticker, 'type': orderType, 'quantity': quantity, 
                       'action': action}
-        # price = 0
-        # if orderType == 'LIMIT':
-        #     if ticker == 'RITC':
-        #         if action == 'BUY':
-        #             price = RITCbid + 0.01
-        #         else:
-        #             price = RITCask - 0.01
-        #     elif ticker == 'BULL':
-        #         if action == 'BUY':
-        #             price = Bullbid + 0.01
-        #         else:
-        #             price = Bullask - 0.01
-        #     else:
-        #         if action == 'BUY':
-        #             price = Bearbid + 0.01
-        #         else:
-        #             price = Bearask - 0.01
-                    
-        #     mkt_params['price'] = price
             
         resp = s.post('http://localhost:9999/v1/orders', params=mkt_params)
         print(mkt_params)
@@ -77,3 +64,14 @@ def order(ticker, orderType, quantity, action):
             return True
         else:
             return False
+        
+def clear_USD(session):
+    USDbid, USDask = ticker_bid_ask(session, "USD")
+    position = get_position(session, "USD")
+    
+    if USDbid <= 0.99 and position > 0:
+        make_order("USD", "MARKET", position, "SELL")
+        time.sleep(0.1)
+    elif USDask >= 1.01 and position < 0:
+        make_order("USD", "MARKET", abs(position), "BUY")
+        time.sleep(0.1)
